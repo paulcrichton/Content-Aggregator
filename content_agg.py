@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 import praw
 import os
 from dotenv import load_dotenv
+import requests
+from bs4 import BeautifulSoup
 
 load_dotenv("/home/kali/python_projects/content_aggrigator/Content-Aggregator-1/setup.env")
 
@@ -58,11 +60,35 @@ class RedditNewPCMasterRace(RedditSource):
             urls.append(vars(submission)['url'])
         return '\n'.join(urls)
 
-if __name__ == '__main__':
-    reddit_top_programming = RedditHotProgramming()
-    reddit_top_programming.fetch(limit=10)
-    print(reddit_top_programming)
 
-    reddit_new_pcmasterrace = RedditNewPCMasterRace()
-    reddit_new_pcmasterrace.fetch(limit=15)
-    print(reddit_new_pcmasterrace)
+
+class BBCSource(Source):
+
+    def connect(self):
+        self.BBC_page = requests.get("https://www.bbc.co.uk/news")
+        return self.BBC_page
+
+class BBCHeadlines(BBCSource):
+    def __init__(self) -> None:
+        self.BBC_page = super().connect()
+        self.headlines = []
+
+    def fetch(self):
+        soup = BeautifulSoup(self.BBC_page.text, 'html.parser')
+        self.headlines = set([element.text for element in soup.find_all("h3")])
+
+    def __repr__(self):
+        return "\n".join(self.headlines)
+
+if __name__ == '__main__':
+    # reddit_top_programming = RedditHotProgramming()
+    # reddit_top_programming.fetch(limit=10)
+    # print(reddit_top_programming)
+
+    # reddit_new_pcmasterrace = RedditNewPCMasterRace()
+    # reddit_new_pcmasterrace.fetch(limit=15)
+    # print(reddit_new_pcmasterrace)
+
+    BBC_news = BBCHeadlines()
+    BBC_news.fetch()
+    print(BBC_news)
